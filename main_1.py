@@ -11,12 +11,15 @@ class QuoridorEnv:
         self.ai = ai
         self.walls_placed = []
         
-    def get_valid_actions(self):
+    def get_state(self):
+        return self.player.position, self.ai.position, self.player.remaining_walls, self.ai.remaining_walls, self.walls_placed
+        
+    def get_valid_actions(self, walls_placed, r, c):
         # moves
-        valid_actions = self.get_valid_moves()
+        valid_actions = self.get_valid_moves(walls_placed, r, c)
         
         # wall placement
-        hors, vers = self.valid_walls_action(self.walls_placed)
+        hors, vers = self.valid_walls_action(walls_placed)
         for wall in hors:
             valid_actions.append(("HWALL", wall))
         for wall in vers:
@@ -24,16 +27,12 @@ class QuoridorEnv:
         return valid_actions
     
         
-    def get_valid_moves(self):
+    def get_valid_moves(self, walls_placed, r, c):
         valid_actions = []
-        if self.current_player == 1:
-            r, c = self.player.position
-        elif self.current_player == 0:
-            r, c = self.ai.position
         
         # Up
         valid = True
-        for wall in self.walls_placed:
+        for wall in walls_placed:
             if wall[0] == "HWALL" and (r - 1, c) in wall[1]:
                 valid = False
                 break
@@ -42,7 +41,7 @@ class QuoridorEnv:
             
         # Down
         valid = True
-        for wall in self.walls_placed:
+        for wall in walls_placed:
             if wall[0] == "HWALL" and (r, c) in wall[1]:
                 valid = False
                 break
@@ -51,7 +50,7 @@ class QuoridorEnv:
             
         # Left
         valid = True
-        for wall in self.walls_placed:
+        for wall in walls_placed:
             if wall[0] == "VWALL" and (r, c - 1) in wall[1]:
                 valid = False
                 break
@@ -60,7 +59,7 @@ class QuoridorEnv:
             
         # Right
         valid = True
-        for wall in self.walls_placed:
+        for wall in walls_placed:
             if wall[0] == "VWALL" and (r, c) in wall[1]:
                 valid = False
                 break
@@ -69,12 +68,12 @@ class QuoridorEnv:
         return valid_actions
     
       
-    def get_valid_walls(self, walls):
+    def get_valid_walls(self, walls_placed):
         hors = []
         for i in range(0, 6):
             for j in range(0, 6):
                 new = (((i, j), (i, j+1)))
-                for wall in walls:
+                for wall in walls_placed:
                     if wall[0] == "HWALL" and new not in wall[1]:
                         hors.append(new)
                 
@@ -82,7 +81,7 @@ class QuoridorEnv:
         for j in range(0, 6):
             for i in range(0, 6):
                 new = (((i, j), (i+1, j)))
-                for wall in walls:
+                for wall in walls_placed:
                     if wall[0] == "VWALL" and new not in wall[1]:
                         vers.append(new)
                     

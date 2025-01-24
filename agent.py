@@ -47,9 +47,12 @@ class AI(Agent):
     def __init__(self, position, symbol = "\u2B24", remaining_walls = 10):
         super().__init__(position, symbol, remaining_walls)
         self.id = 0
+        
+    def simulate_state(self, get_state):
+        pass
     
 
-    def minimax(self, state, depth, is_maximizing, get_valid_actions, evaluate_state):
+    def minimax(self, state, depth, is_maximizing, get_valid_actions, evaluate_state, get_state):
         """
         Minimax algorithm for decision-making in a two-player game.
 
@@ -67,7 +70,15 @@ class AI(Agent):
             return None, evaluate_state(state)  # No action, just the score
 
         best_action = None
-
+        
+        selected_actions = []
+        root = Simulated_state(get_state)
+        children = []
+        valid_actions = get_valid_actions(self, self.walls_placed, self.ai_position[0], self.ai_position[1])
+        for action in valid_actions:
+            children.append(root.create_child(action))
+        
+        
         if is_maximizing:
             max_eval = -math.inf
             for action in get_valid_actions(state, is_maximizing):
@@ -108,3 +119,19 @@ class AI(Agent):
         
     def action(self):
         pass
+    
+class Simulated_state():
+    def __init__(self, get_state):
+        self.player_position, self.ai_position, self.player_remaining_walls, self.ai_remaining_walls, self.walls_placed = get_state()
+        
+    def expland(self, get_valid_actions):
+        
+                
+                
+    def update_state(self, action):
+        if action[0] == "MOVE":
+            self.ai_position = action[1]
+        elif action[0] == "HWALL" or action[0] == "VWALL":
+            self.walls_placed.append(action)
+            self.player.remaining_walls -= 1
+        self.current_player = 1 
