@@ -17,6 +17,7 @@ class Player(Agent):
         self.id = 1
     
     def action(self, get_valid_moves, get_valid_walls, walls):
+        # walls is the walls placed so far
         print("Write the action you want to take in this format: \n ('MOVE', (row, col)) or ('HWALL', ((row, col), (row, col+1))) or ('VWALL', ((row, col), (row+1, col)))")
         try:
             p_action = ast.literal_eval(input())
@@ -44,95 +45,102 @@ class Player(Agent):
             return self.action()  # Retry
         
 class AI(Agent):
-    def __init__(self, position, symbol = "\u2B24", remaining_walls = 10):
+    def __init__(self, position, symbol = "\u2B24", remaining_walls = 10, max=True):
         super().__init__(position, symbol, remaining_walls)
         self.id = 0
+        self.max= True
         
-    def simulate_state(self, get_state):
-        pass
-    
+    def max_value(self, get_valid_action, placed_walls, opponent_loc,opponent_rem_walls, depth, dep_limit):
+        if (self.is_terminal(opponent_loc)): 
+            return (self.utility(), None)
+        if (depth == dep_limit):
+            return self.eval(get_valid_action, placed_walls, opponent_loc, opponent_rem_walls) 
+        best_v = float('-inf')
+        for a in get_valid_action():
+            v2, a2 = self.min_value(get_valid_action, placed_walls, opponent_loc, depth-1, dep_limit)
+            if v2 > best_v:
+                best_v, move = v2, a
+        return best_v, move
 
-    def minimax(self, state, depth, is_maximizing, get_valid_actions, evaluate_state, get_state):
-        """
-        Minimax algorithm for decision-making in a two-player game.
+    def min_value(self, get_valid_action, placed_walls, opponent_loc,opponent_rem_walls, depth, dep_limit):
+        if (self.is_terminal( opponent_loc)): 
+            return (self.utility(), None)
+        if (depth == dep_limit):
+            return self.eval(get_valid_action, placed_walls, opponent_loc, opponent_rem_walls) 
+        best_v = float('inf')
+        for a in get_valid_action():
+            v2, a2 = self.max_value(get_valid_action, placed_walls, opponent_loc, depth-1, dep_limit)
+            if v2 < best_v:
+                best_v, move = v2, a
+        return best_v, move
 
-        Args:
-            state: The current state of the game.
-            depth: The maximum depth for the minimax search.
-            is_maximizing: A boolean indicating whether the current layer is maximizing.
-            get_valid_actions: A function that returns valid actions for the given state and player.
-            evaluate_state: A function that evaluates the given state and returns a score.
+    def utility(self):
+        return 1000 * (self.position[0])/6
+        # scaling u between 0 and 1000
+
+    def eval(self, get_valid_action, placed_walls, opponent_loc, opponent_rem_walls):
+        return self.find_shortest_path_to_max_win(get_valid_action, placed_walls, opponent_loc, opponent_rem_walls)
+
+
+    def find_shortest_path_to_max_win(self, get_valid_action, placed_walls, opponent_loc, opponent_rem_walls):
+
+        root = {'walls': placed_walls, 'opp_loc':opponent_loc,'opp_rem_wall': opponent_rem_walls,
+                'ai_pos': self.position.copy(), 'ai_rem_wall': self.remaining_walls.copy(), 'last_turn':'human', 'path_len': 0}
+        queue = [root]
+
+        while len(queue) > 0:
+            cur_node = queue.pop(0)
+            if(cur_node['ai_pos'][0] == 6): #win
+                return cur_node['path_len']
             
-        Returns:
-            The best action for the player and its evaluation score.
-            """
-        if depth == 0 or self.is_terminal(state):
-            return None, evaluate_state(state)  # No action, just the score
+            placed_walls_inAImind = cur_node['walls']
 
-        best_action = None
-        
-        selected_actions = []
-        root = Simulated_state(get_state)
-        children = []
-        valid_actions = get_valid_actions(self, self.walls_placed, self.ai_position[0], self.ai_position[1])
-        for action in valid_actions:
-            children.append(root.create_child(action))
-        
-        
-        if is_maximizing:
-            max_eval = -math.inf
-            for action in get_valid_actions(state, is_maximizing):
-                new_state = self.apply_action(state, action, is_maximizing)
-                _, eval_score = self.minimax(new_state, depth - 1, False, get_valid_actions, evaluate_state)
-                if eval_score > max_eval:
-                    max_eval = eval_score
-                    best_action = action
-            return best_action, max_eval
-        else:
-            min_eval = math.inf
-            for action in get_valid_actions(state, is_maximizing):
-                new_state = self.apply_action(state, action, is_maximizing)
-                _, eval_score = self.minimax(new_state, depth - 1, True, get_valid_actions, evaluate_state)
-                if eval_score < min_eval:
-                    min_eval = eval_score
-                    best_action = action
-            return best_action, min_eval
 
-    # Helper Functions:
-    def is_terminal(state):
-        """Determine if the current state is terminal (end of game)."""
-        # Replace with actual terminal condition logic
-        return False
+            if(cur_node['last_turn']=='human'):
+                for act in get_valid_action(cur_node['walls'], cur_node['ai_pos'][0], cur_node['ai_pos'][1]):
+                        placed_walls_inAImind, pos, rem_walls = self.update_state(act, placed_walls_inAImind, cur_node['ai_rem_walls'])
 
-    def apply_action(state, action, is_maximizing):
-        """Apply an action to the state and return the new state."""
-        # Deep copy the state and modify based on the action
-        # Replace with actual game logic
-        new_state = state.copy()
-        if action[0] == 'MOVE':
-            new_state['players'][0 if is_maximizing else 1]['position'] = action[1]
-        elif action[0] in ('HWALL', 'VWALL'):
-            new_state['walls'].append(action[1])
-            new_state['players'][0 if is_maximizing else 1]['remaining_walls'] -= 1
-        return new_state
+                        new_state =  {'walls': placed_walls_inAImind, 'opp_loc':cur_node['opp_loc'],
+                                      'opp_rem_wall': cur_node['opp_rem_walls'], 'ai_pos': pos, 
+                                      'ai_rem_wall': rem_walls, 'last_turn':'ai', 'path_len': cur_node['path_len']+1}
+            
+            if(cur_node['last_turn']=='ai'):
+                for act in get_valid_action(cur_node['walls'], cur_node['opp_loc'][0], cur_node['opp_loc'][1]):
+                        placed_walls_inAImind, pos, rem_walls = self.update_state(act, placed_walls_inAImind, cur_node['opp_rem_walls'])
 
-        
-    def action(self):
-        pass # it should get percept and recall minimax and return the selected output
-    
-class Simulated_state():
-    def __init__(self, get_state):
-        self.player_position, self.ai_position, self.player_remaining_walls, self.ai_remaining_walls, self.walls_placed = get_state()
-        
-    def expland(self, get_valid_actions):
-        pass
-        
-                
-                
-    def update_state(self, action):
+                        new_state =  {'walls': placed_walls_inAImind, 'opp_loc':pos ,'opp_rem_wall': rem_walls,
+                                      'ai_pos': cur_node['ai_pos'], 'ai_rem_wall': cur_node['ai_rem_walls'],
+                                      'last_turn':'human', 'path_len': cur_node['path_len']+1}
+       
+            queue.append(new_state)
+
+
+    def update_state(self, action, placed_walls_inAImind, remaining_walls):
         if action[0] == "MOVE":
-            self.ai_position = action[1]
+            pos = action[1]
         elif action[0] == "HWALL" or action[0] == "VWALL":
-            self.walls_placed.append(action)
-            self.player.remaining_walls -= 1
-        self.current_player = 1 
+            placed_walls_inAImind.append(action)
+            rem_walls = remaining_walls - 1
+
+        return (placed_walls_inAImind, pos, rem_walls)
+
+
+    def is_terminal(self,  opponent_loc):
+        """Determine if the current state is terminal (end of game)."""
+        if (self.position[0]==6):
+            return True
+        elif (opponent_loc[0] == 0):
+            return True
+        else:
+            return False
+
+
+        
+    def action(self, get_valid_actions, placed_walls, opponent_loc, depth, dep_limit):
+        value, move = self.max_value(get_valid_actions, placed_walls, opponent_loc, depth, dep_limit)
+        return move
+       # it should get percept and recall minimax and return the selected output
+    
+                
+                
+   
