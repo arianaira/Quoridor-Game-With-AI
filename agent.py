@@ -118,13 +118,14 @@ class AI(Agent):
 
         
     def action(self):
-        pass
+        pass # it should get percept and recall minimax and return the selected output
     
 class Simulated_state():
     def __init__(self, get_state):
         self.player_position, self.ai_position, self.player_remaining_walls, self.ai_remaining_walls, self.walls_placed = get_state()
         
     def expland(self, get_valid_actions):
+        pass
         
                 
                 

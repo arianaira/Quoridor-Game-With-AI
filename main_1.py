@@ -6,10 +6,10 @@ class QuoridorEnv:
     def __init__(self,player, ai, board_size: int = 7, initial_walls: int = 10):
         self.board_size = board_size
         self.walls_left = [initial_walls, initial_walls]
-        self.current_player = 1
+        self.current_player = 1  #0 is for ai and 1 for human player
         self.player = player
-        self.ai = ai
-        self.walls_placed = []
+        self.ai = ai     
+        self.walls_placed = []    # alist of tuples like ('Hwall/Vwall', ((x,y),(x+1,y)))
         
     def get_state(self):
         return self.player.position, self.ai.position, self.player.remaining_walls, self.ai.remaining_walls, self.walls_placed
@@ -24,7 +24,7 @@ class QuoridorEnv:
             valid_actions.append(("HWALL", wall))
         for wall in vers:
             valid_actions.append(("VWALL", wall))
-        return valid_actions
+        return valid_actions   # a list of tuples ('hwall/vwall', ((ij), (ij))) or ('move', (ij))
     
         
     def get_valid_moves(self, walls_placed, r, c):
@@ -72,22 +72,31 @@ class QuoridorEnv:
         hors = []
         for i in range(0, 6):
             for j in range(0, 6):
-                new = (((i, j), (i, j+1)))
+                new = ((i, j), (i, j+1)) #new wall to be checked
+                is_occupied = False
                 for wall in walls_placed:
-                    if wall[0] == "HWALL" and new not in wall[1]:
-                        hors.append(new)
+                    if wall[0] == "HWALL" and (new[0] in wall[1] or new[1] in wall[1]):
+                        is_occupied = True
+                        break
+                if not is_occupied:
+                    hors.append(new)
                 
         vers = []
         for j in range(0, 6):
             for i in range(0, 6):
-                new = (((i, j), (i+1, j)))
+                new = ((i, j), (i+1, j))
+                is_occupied = False
                 for wall in walls_placed:
-                    if wall[0] == "VWALL" and new not in wall[1]:
-                        vers.append(new)
+                    if wall[0] == "VWALL" and (new[0] in wall[1] or new[1] in wall[1]):
+                        is_occupied =True
+                        break
+                if not is_occupied:
+                    vers.append(new)
                     
-        return hors, vers
+        return hors, vers # each is a list of tuples of ((i,j), (i',j'))
 
     def update_state(self, action, id):
+        # only valid actions are passed to this function
         print("id", id)
         print(action[0])
         if id == 1:
@@ -165,20 +174,20 @@ if __name__ == "__main__":
     env = QuoridorEnv(player, ai, board_size=7, initial_walls=10)
     env.render()
     
-    end = False
+    end = False # false as long as the game is going on
     while not end:
         p_action = None
         print("remaining walls for player:", env.player.remaining_walls, "\nremaining walls for AI:", env.ai.remaining_walls)
         print(env.current_player)
-        if env.current_player == 1:
-            p_action = player.action(env.get_valid_walls, env.get_valid_moves)
-        elif env.current_player == 0:
-            p_action = ai.action(env.get_valid_actions)
-        env.update_state(p_action, env.current_player)
-        end, winner = env.goal_test()
+        # if env.current_player == 1:
+        #     p_action = player.action(env.get_valid_walls, env.get_valid_moves)
+        # elif env.current_player == 0:
+        #     p_action = ai.action(env.get_valid_actions)
+        # env.update_state(p_action, env.current_player)  # change turns for next iter
+        # end, winner = env.goal_test()
         end = True
     
-    if winner == 1:
-        print("Congratulation player, you beat the AI!")
-    elif winner == 0:
-        print("AI won, better luck next time!")
+    # if winner == 1:
+    #     print("Congratulation player, you beat the AI!")
+    # elif winner == 0:
+    #     print("AI won, better luck next time!")
