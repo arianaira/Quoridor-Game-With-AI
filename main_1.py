@@ -182,7 +182,7 @@ if __name__ == "__main__":
         if env.current_player == 1:
             p_action = player.action(env.get_valid_moves, env.get_valid_walls, env.walls_placed)
         elif env.current_player == 0:
-            p_action = ai.action(env.get_valid_actions, env.walls_placed, player.position,  player.remaining_walls, 10, 2)
+            p_action = ai.action(env.get_valid_actions, env.walls_placed, player.position,  player.remaining_walls, 0, 4)
         env.update_state(p_action, env.current_player)  # change turns for next iter
         end, winner = env.goal_test()
         # end = True
