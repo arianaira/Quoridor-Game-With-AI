@@ -19,7 +19,7 @@ class QuoridorEnv:
         valid_actions = self.get_valid_moves(walls_placed, r, c)
         
         # wall placement
-        hors, vers = self.valid_walls_action(walls_placed)
+        hors, vers = self.get_valid_walls(walls_placed)
         for wall in hors:
             valid_actions.append(("HWALL", wall))
         for wall in vers:
@@ -179,15 +179,15 @@ if __name__ == "__main__":
         p_action = None
         print("remaining walls for player:", env.player.remaining_walls, "\nremaining walls for AI:", env.ai.remaining_walls)
         print(env.current_player)
-        # if env.current_player == 1:
-        #     p_action = player.action(env.get_valid_walls, env.get_valid_moves)
-        # elif env.current_player == 0:
-        #     p_action = ai.action(env.get_valid_actions)
-        # env.update_state(p_action, env.current_player)  # change turns for next iter
-        # end, winner = env.goal_test()
-        end = True
+        if env.current_player == 1:
+            p_action = player.action(env.get_valid_moves, env.get_valid_walls, env.walls_placed)
+        elif env.current_player == 0:
+            p_action = ai.action(env.get_valid_actions, env.walls_placed, player.position,  player.remaining_walls, 10, 2)
+        env.update_state(p_action, env.current_player)  # change turns for next iter
+        end, winner = env.goal_test()
+        # end = True
     
-    # if winner == 1:
-    #     print("Congratulation player, you beat the AI!")
-    # elif winner == 0:
-    #     print("AI won, better luck next time!")
+    if winner == 1:
+        print("Congratulation player, you beat the AI!")
+    elif winner == 0:
+        print("AI won, better luck next time!")

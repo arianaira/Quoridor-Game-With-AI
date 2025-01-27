@@ -25,7 +25,8 @@ class Player(Agent):
             # Validate the 'MOVE' action
             if p_action[0] == 'MOVE' and isinstance(p_action[1], tuple) and len(p_action[1]) == 2:
                 if all(isinstance(coord, int) for coord in p_action[1]):
-                    if p_action in get_valid_moves():
+                    valids = get_valid_moves(walls, self.position[0], self.position[1])
+                    if p_action in valids:
                         return p_action
             
             # Validate the 'HWALL' and 'VWALL' actions
@@ -56,8 +57,9 @@ class AI(Agent):
         if (depth == dep_limit):
             return self.eval(get_valid_action, placed_walls, opponent_loc, opponent_rem_walls) 
         best_v = float('-inf')
-        for a in get_valid_action():
-            v2, a2 = self.min_value(get_valid_action, placed_walls, opponent_loc, depth-1, dep_limit)
+        valids = get_valid_action(placed_walls, self.position[0], self.position[1])
+        for a in valids:
+            v2, a2 = self.min_value(get_valid_action, placed_walls, opponent_loc, opponent_rem_walls, depth-1, dep_limit)
             if v2 > best_v:
                 best_v, move = v2, a
         return best_v, move
@@ -68,8 +70,9 @@ class AI(Agent):
         if (depth == dep_limit):
             return self.eval(get_valid_action, placed_walls, opponent_loc, opponent_rem_walls) 
         best_v = float('inf')
-        for a in get_valid_action():
-            v2, a2 = self.max_value(get_valid_action, placed_walls, opponent_loc, depth-1, dep_limit)
+        valids = get_valid_action(placed_walls, opponent_loc[0], opponent_loc[1])
+        for a in valids:
+            v2, a2 = self.max_value(get_valid_action, placed_walls, opponent_loc, opponent_rem_walls, depth-1, dep_limit)
             if v2 < best_v:
                 best_v, move = v2, a
         return best_v, move
@@ -83,9 +86,10 @@ class AI(Agent):
 
 
     def find_shortest_path_to_max_win(self, get_valid_action, placed_walls, opponent_loc, opponent_rem_walls):
-
+        pos_cop = self.position
+        rem_wall_cop = self.remaining_walls
         root = {'walls': placed_walls, 'opp_loc':opponent_loc,'opp_rem_wall': opponent_rem_walls,
-                'ai_pos': self.position.copy(), 'ai_rem_wall': self.remaining_walls.copy(), 'last_turn':'human', 'path_len': 0}
+                'ai_pos': pos_cop, 'ai_rem_wall': rem_wall_cop, 'last_turn':'human', 'path_len': 0}
         queue = [root]
 
         while len(queue) > 0:
@@ -98,10 +102,10 @@ class AI(Agent):
 
             if(cur_node['last_turn']=='human'):
                 for act in get_valid_action(cur_node['walls'], cur_node['ai_pos'][0], cur_node['ai_pos'][1]):
-                        placed_walls_inAImind, pos, rem_walls = self.update_state(act, placed_walls_inAImind, cur_node['ai_rem_walls'])
+                        placed_walls_inAImind, pos, rem_walls = self.update_state(act, placed_walls_inAImind, cur_node['ai_rem_wall'])
 
                         new_state =  {'walls': placed_walls_inAImind, 'opp_loc':cur_node['opp_loc'],
-                                      'opp_rem_wall': cur_node['opp_rem_walls'], 'ai_pos': pos, 
+                                      'opp_rem_wall': cur_node['opp_rem_wall'], 'ai_pos': pos, 
                                       'ai_rem_wall': rem_walls, 'last_turn':'ai', 'path_len': cur_node['path_len']+1}
             
             if(cur_node['last_turn']=='ai'):
@@ -116,6 +120,8 @@ class AI(Agent):
 
 
     def update_state(self, action, placed_walls_inAImind, remaining_walls):
+        pos = self.position
+        rem_walls = remaining_walls
         if action[0] == "MOVE":
             pos = action[1]
         elif action[0] == "HWALL" or action[0] == "VWALL":
@@ -136,8 +142,9 @@ class AI(Agent):
 
 
         
-    def action(self, get_valid_actions, placed_walls, opponent_loc, depth, dep_limit):
-        value, move = self.max_value(get_valid_actions, placed_walls, opponent_loc, depth, dep_limit)
+    def action(self, get_valid_actions, placed_walls, opponent_loc, opponent_rem_walls, depth, dep_limit):
+        value, move = self.max_value(get_valid_actions, placed_walls, opponent_loc, opponent_rem_walls, depth, dep_limit)
+        print(move)
         return move
        # it should get percept and recall minimax and return the selected output
     
